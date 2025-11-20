@@ -516,11 +516,11 @@
       `;
       itemsTableBody.appendChild(tr);
 
-      const productInput = tr.querySelector(".product-input");
-      const priceInput   = tr.querySelector(".price-input");
-      const qtyInput     = tr.querySelector(".qty-input");
+      const productInput   = tr.querySelector(".product-input");
+      const priceInput     = tr.querySelector(".price-input");
+      const qtyInput       = tr.querySelector(".qty-input");
       const lineTotalInput = tr.querySelector(".line-total-input");
-      const removeBtn    = tr.querySelector(".remove-item-btn");
+      const removeBtn      = tr.querySelector(".remove-item-btn");
 
       function updateLineTotal() {
         const price = parseFloat(priceInput.value) || 0;
@@ -553,6 +553,16 @@
         calculateTotals();
       }
 
+      // NEW: Enter on product → apply product & go to qty
+      productInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          applyProductFromInput();
+          qtyInput.focus();
+          qtyInput.select();
+        }
+      });
+
       productInput.addEventListener("change", applyProductFromInput);
       productInput.addEventListener("blur", applyProductFromInput);
 
@@ -561,6 +571,7 @@
         calculateTotals();
       });
 
+      // Enter on qty (last row) → create next row & focus its product
       qtyInput.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           e.preventDefault();
