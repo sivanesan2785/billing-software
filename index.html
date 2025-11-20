@@ -104,6 +104,10 @@
                     <label class="form-label">GST Number (optional)</label>
                     <input type="text" id="companyGST" class="form-control" placeholder="GSTIN (if any)" />
                   </div>
+                  <div class="mb-2">
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" id="companyPhone" class="form-control" placeholder="Company phone / WhatsApp" />
+                  </div>
                   <div class="mb-3">
                     <label class="form-label">Owner Name</label>
                     <input type="text" id="companyOwner" class="form-control" placeholder="Owner / Proprietor" />
@@ -167,18 +171,23 @@
 
             <div class="row g-3 mb-3">
               <div class="col-md-4">
-                <label class="form-label">Customer Name</label>
-                <input type="text" id="customerName" class="form-control" placeholder="Enter customer name" required />
+                <label class="form-label">Customer Name (optional)</label>
+                <input type="text" id="customerName" class="form-control" placeholder="Enter customer name" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Customer Phone (optional)</label>
+                <input type="text" id="customerPhone" class="form-control" placeholder="Phone / Mobile" />
               </div>
               <div class="col-md-4">
                 <label class="form-label">Invoice Date</label>
                 <input type="date" id="invoiceDate" class="form-control" />
               </div>
-              <div class="col-md-4 d-flex align-items-end">
-                <button class="btn btn-outline-primary ms-md-auto" id="addItemBtn" type="button">
-                  + Add Item (Alt + A)
-                </button>
-              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mb-2">
+              <button class="btn btn-outline-primary" id="addItemBtn" type="button">
+                + Add Item (Alt + A)
+              </button>
             </div>
 
             <!-- Global datalist for product typing -->
@@ -210,7 +219,7 @@
                 </div>
                 <div class="mb-2 d-flex justify-content-between align-items-center">
                   <span>Tax (%)</span>
-                  <!-- Default 0 as requested -->
+                  <!-- Default 0 -->
                   <input type="number" step="0.01" min="0" id="taxPercentInput"
                          class="form-control form-control-sm" style="max-width: 120px;" value="0" />
                 </div>
@@ -222,6 +231,15 @@
                   <span>Discount:</span>
                   <input type="number" step="0.01" min="0" id="discountInput"
                          class="form-control form-control-sm" style="max-width: 120px;" value="0" />
+                </div>
+                <div class="mb-2 d-flex justify-content-between align-items-center">
+                  <span>Paid:</span>
+                  <input type="number" step="0.01" min="0" id="paidInput"
+                         class="form-control form-control-sm" style="max-width: 120px;" value="0" />
+                </div>
+                <div class="mb-2 d-flex justify-content-between">
+                  <span>Balance:</span>
+                  <span id="balanceDisplay">0.00</span>
                 </div>
                 <hr />
                 <div class="mb-2 d-flex justify-content-between fw-bold">
@@ -239,8 +257,8 @@
 
             <div class="mt-2">
               <small class="text-muted">
-                Type product name in item row (suggestions will show).  
-                Use unit: Qty / Mtr / Ft / Dozen / Gram.
+                Type product name (suggestions will show). Enter → jump to Qty.  
+                Enter on Qty (last row) → adds next item row. Units: Qty / Mtr / Ft / Dozen / Gram.
               </small>
             </div>
           </div>
@@ -251,7 +269,13 @@
       <div class="tab-pane fade" id="invoices-pane" role="tabpanel">
         <div class="card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title mb-3">Invoices</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="card-title mb-0">Invoices</h5>
+              <input type="text" id="invoiceSearchInput"
+                     class="form-control form-control-sm"
+                     style="max-width: 260px;"
+                     placeholder="Search by customer / phone" />
+            </div>
             <div class="table-responsive">
               <table class="table table-striped table-hover align-middle">
                 <thead class="table-dark">
@@ -259,6 +283,7 @@
                     <th>#</th>
                     <th>Invoice No</th>
                     <th>Customer</th>
+                    <th>Customer Phone</th>
                     <th>Date</th>
                     <th>Total</th>
                     <th class="text-end">Actions</th>
@@ -325,7 +350,9 @@
     }
     function getCompany() {
       const raw = localStorage.getItem(COMPANY_KEY);
-      return raw ? JSON.parse(raw) : { name:"", address:"", gst:"", owner:"" };
+      return raw ? JSON.parse(raw) : {
+        name:"", address:"", gst:"", owner:"", phone:""
+      };
     }
     function saveCompany(company) {
       localStorage.setItem(COMPANY_KEY, JSON.stringify(company));
@@ -439,6 +466,7 @@
     const companyNameInput = document.getElementById("companyName");
     const companyAddressInput = document.getElementById("companyAddress");
     const companyGSTInput = document.getElementById("companyGST");
+    const companyPhoneInput = document.getElementById("companyPhone");
     const companyOwnerInput = document.getElementById("companyOwner");
 
     function loadCompanyForm() {
@@ -446,6 +474,7 @@
       companyNameInput.value = c.name || "";
       companyAddressInput.value = c.address || "";
       companyGSTInput.value = c.gst || "";
+      companyPhoneInput.value = c.phone || "";
       companyOwnerInput.value = c.owner || "";
     }
 
@@ -455,6 +484,7 @@
         name: companyNameInput.value.trim(),
         address: companyAddressInput.value.trim(),
         gst: companyGSTInput.value.trim(),
+        phone: companyPhoneInput.value.trim(),
         owner: companyOwnerInput.value.trim()
       });
       alert("Company information saved.");
@@ -468,7 +498,10 @@
     const taxDisplay = document.getElementById("taxDisplay");
     const discountInput = document.getElementById("discountInput");
     const grandTotalDisplay = document.getElementById("grandTotalDisplay");
+    const paidInput = document.getElementById("paidInput");
+    const balanceDisplay = document.getElementById("balanceDisplay");
     const customerNameInput = document.getElementById("customerName");
+    const customerPhoneInput = document.getElementById("customerPhone");
     const invoiceDateInput = document.getElementById("invoiceDate");
     const saveInvoiceBtn = document.getElementById("saveInvoiceBtn");
 
@@ -553,7 +586,7 @@
         calculateTotals();
       }
 
-      // NEW: Enter on product → apply product & go to qty
+      // Enter on product → apply product & go to qty
       productInput.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -600,9 +633,6 @@
       row.querySelector(".product-input").focus();
     });
 
-    discountInput.addEventListener("input", calculateTotals);
-    taxPercentInput.addEventListener("input", calculateTotals);
-
     function calculateTotals() {
       let subtotal = 0;
       itemsTableBody.querySelectorAll(".line-total-input").forEach(function (i) {
@@ -613,17 +643,23 @@
       const discount = parseFloat(discountInput.value) || 0;
       let grand = subtotal + tax - discount;
       if (grand < 0) grand = 0;
+      const paid = parseFloat(paidInput.value) || 0;
+      let balance = grand - paid;
+      if (balance < 0) balance = 0;
+
       subtotalDisplay.textContent = subtotal.toFixed(2);
       taxDisplay.textContent = tax.toFixed(2);
       grandTotalDisplay.textContent = grand.toFixed(2);
+      balanceDisplay.textContent = balance.toFixed(2);
     }
 
+    discountInput.addEventListener("input", calculateTotals);
+    taxPercentInput.addEventListener("input", calculateTotals);
+    paidInput.addEventListener("input", calculateTotals);
+
     saveInvoiceBtn.addEventListener("click", function () {
-      const customer = customerNameInput.value.trim();
-      if (!customer) {
-        alert("Please enter customer name.");
-        return;
-      }
+      const customerName = customerNameInput.value.trim(); // optional
+      const customerPhone = customerPhoneInput.value.trim(); // optional
       const rows = itemsTableBody.querySelectorAll("tr");
       if (!rows.length) {
         alert("Please add at least one item.");
@@ -650,6 +686,7 @@
         const product = products.find(
           p => (p.name || "").toLowerCase() === productName.toLowerCase()
         );
+        const costPrice = product ? (product.costPrice ?? product.price ?? 0) : 0;
 
         items.push({
           productId: product ? product.id : null,
@@ -657,6 +694,7 @@
           price,
           qty,
           unit,
+          costPrice,
           lineTotal: total
         });
       });
@@ -671,29 +709,54 @@
       const tax = parseFloat(taxDisplay.textContent) || 0;
       const discount = parseFloat(discountInput.value) || 0;
       const grand = parseFloat(grandTotalDisplay.textContent) || 0;
+      const paid = parseFloat(paidInput.value) || 0;
+      let balance = parseFloat(balanceDisplay.textContent) || 0;
 
       const invoices = getInvoices();
       const invoiceNumber = "INV-" + String(invoices.length + 1).padStart(4, "0");
       const date = invoiceDateInput.value || new Date().toISOString().split("T")[0];
 
-      invoices.push({
+      const invoice = {
         id: Date.now(),
         invoiceNumber,
-        customerName: customer,
+        customerName,
+        customerPhone,
         date,
         subtotal,
         taxPercent,
         tax,
         discount,
         grandTotal: grand,
+        paid,
+        balance,
         items
-      });
+      };
 
+      invoices.push(invoice);
       saveInvoices(invoices);
+
+      // ---- AUTO STOCK UPDATE ----
+      let products = getProducts();
+      items.forEach(item => {
+        if (!item.productId) return;
+        const idx = products.findIndex(p => p.id === item.productId);
+        if (idx !== -1) {
+          const oldStock = parseInt(products[idx].stock, 10) || 0;
+          const newStock = oldStock - item.qty;
+          products[idx].stock = newStock < 0 ? 0 : newStock;
+        }
+      });
+      saveProducts(products);
+      renderProductsTable();
+      // ---------------------------
+
+      // Clear form
       customerNameInput.value = "";
+      customerPhoneInput.value = "";
       invoiceDateInput.value = "";
       itemsTableBody.innerHTML = "";
       discountInput.value = "0";
+      paidInput.value = "0";
       calculateTotals();
       renderInvoicesTable();
       alert("Invoice saved successfully!");
@@ -704,17 +767,31 @@
     const invoiceViewBody = document.getElementById("invoiceViewBody");
     const invoiceViewModal = new bootstrap.Modal(document.getElementById("invoiceViewModal"));
     const printInvoiceBtn = document.getElementById("printInvoiceBtn");
+    const invoiceSearchInput = document.getElementById("invoiceSearchInput");
     let lastViewedInvoiceHtml = "";
 
     function renderInvoicesTable() {
       const invoices = getInvoices();
+      const term = (invoiceSearchInput.value || "").trim().toLowerCase();
+      const list = term
+        ? invoices.filter(inv => {
+            const name = (inv.customerName || "").toLowerCase();
+            const phone = (inv.customerPhone || "").toLowerCase();
+            return name.includes(term) || phone.includes(term);
+          })
+        : invoices;
+
       invoicesTableBody.innerHTML = "";
-      invoices.forEach(function (inv, idx) {
+      list.forEach(function (inv, idx) {
+        const displayName = inv.customerName && inv.customerName.trim()
+          ? inv.customerName
+          : "Walk-in Customer";
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${idx + 1}</td>
           <td>${inv.invoiceNumber}</td>
-          <td>${inv.customerName}</td>
+          <td>${displayName}</td>
+          <td>${inv.customerPhone || ""}</td>
           <td>${inv.date}</td>
           <td>${inv.grandTotal.toFixed(2)}</td>
           <td class="text-end">
@@ -726,23 +803,31 @@
       });
     }
 
+    invoiceSearchInput.addEventListener("input", renderInvoicesTable);
+
     window.viewInvoice = function (id) {
       const inv = getInvoices().find(i => i.id === id);
       if (!inv) return;
       const c = getCompany();
       const addr = (c.address || "").replace(/\n/g, "<br/>");
+      const displayName = inv.customerName && inv.customerName.trim()
+        ? inv.customerName
+        : "Walk-in Customer";
+
       let html = `
         <div class="mb-3">
           <div class="text-center">
             <h4>${c.name || "Company Name"}</h4>
             ${addr ? `<div>${addr}</div>` : ""}
+            ${c.phone ? `<div><strong>Phone:</strong> ${c.phone}</div>` : ""}
             ${c.gst ? `<div><strong>GSTIN:</strong> ${c.gst}</div>` : ""}
           </div>
           <hr/>
           <div class="d-flex justify-content-between">
             <div>
               <strong>Invoice No:</strong> ${inv.invoiceNumber}<br/>
-              <strong>Customer:</strong> ${inv.customerName}<br/>
+              <strong>Customer:</strong> ${displayName}<br/>
+              ${inv.customerPhone ? `<strong>Phone:</strong> ${inv.customerPhone}<br/>` : ""}
             </div>
             <div class="text-end">
               <strong>Date:</strong> ${inv.date}
@@ -783,6 +868,8 @@
           <p>Subtotal: <strong>${inv.subtotal.toFixed(2)}</strong></p>
           <p>Tax (${inv.taxPercent ?? 0}%): <strong>${inv.tax.toFixed(2)}</strong></p>
           <p>Discount: <strong>${inv.discount.toFixed(2)}</strong></p>
+          <p>Paid: <strong>${(inv.paid ?? 0).toFixed(2)}</strong></p>
+          <p>Balance: <strong>${(inv.balance ?? 0).toFixed(2)}</strong></p>
           <p class="fs-5">Grand Total: <strong>${inv.grandTotal.toFixed(2)}</strong></p>
         </div>
         <div class="d-flex justify-content-end mt-4">
@@ -906,3 +993,4 @@
   </script>
 </body>
 </html>
+
